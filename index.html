@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>نظام كشف الأسماء</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Cairo", Arial, sans-serif;
+    }
+
+    :root {
+        --bg-1: #08111f;
+        --bg-2: #0f172a;
+        --bg-3: #172033;
+        --card: rgba(255, 255, 255, 0.07);
+        --card-border: rgba(255, 255, 255, 0.12);
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --blue1: #0ea5e9;
+        --blue2: #2563eb;
+        --green1: #22c55e;
+        --green2: #16a34a;
+        --yellow1: #f59e0b;
+        --yellow2: #d97706;
+        --red1: #ef4444;
+        --red2: #dc2626;
+        --shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+        --radius: 22px;
+    }
+
+    body {
+        direction: rtl;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+            radial-gradient(circle at top right, rgba(37, 99, 235, 0.25), transparent 22%),
+            radial-gradient(circle at bottom left, rgba(14, 165, 233, 0.18), transparent 24%),
+            linear-gradient(135deg, var(--bg-1), var(--bg-2), #0b1220);
+        padding: 20px 12px 35px;
+    }
+
+    .app {
+        width: min(1280px, 100%);
+        margin: auto;
+    }
+
+    .hero {
+        background: linear-gradient(135deg, rgba(14,165,233,0.22), rgba(37,99,235,0.18));
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        margin-bottom: 18px;
+        backdrop-filter: blur(12px);
+    }
+
+    .hero-inner {
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .hero-text h1 {
+        font-size: clamp(24px, 4vw, 38px);
+        font-weight: 900;
+        margin-bottom: 8px;
+        letter-spacing: 0.3px;
+    }
+
+    .hero-text p {
+        color: #dbeafe;
+        font-size: 15px;
+        line-height: 1.8;
+    }
+
+    .hero-badge {
+        padding: 14px 18px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 18px;
+        color: #e0f2fe;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .stat-card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
+        min-height: 115px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
+        pointer-events: none;
+    }
+
+    .stat-title {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 12px;
+        font-weight: 700;
+    }
+
+    .stat-value {
+        font-size: clamp(22px, 3vw, 32px);
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .stat-note {
+        font-size: 13px;
+        color: #cbd5e1;
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: 390px 1fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .panel {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
+        overflow: hidden;
+    }
+
+    .panel-header {
+        padding: 18px 18px 10px;
+    }
+
+    .panel-title {
+        font-size: 20px;
+        font-weight: 800;
+        margin-bottom: 5px;
+    }
+
+    .panel-subtitle {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    .panel-body {
+        padding: 18px;
+    }
+
+    .input-group {
+        margin-bottom: 14px;
+    }
+
+    .input-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #dbeafe;
+        font-weight: 700;
+    }
+
+    .input-wrap {
+        position: relative;
+    }
+
+    .input-wrap span {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0.8;
+        font-size: 15px;
+    }
+
+    input {
+        width: 100%;
+        padding: 15px 15px 15px 42px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.09);
+        background: rgba(8, 15, 28, 0.7);
+        color: var(--text);
+        outline: none;
+        font-size: 15px;
+        transition: 0.25s ease;
+    }
+
+    input::placeholder {
+        color: #7c8ba1;
+    }
+
+    input:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.16);
+        transform: translateY(-1px);
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    button {
+        border: none;
+        cursor: pointer;
+        padding: 14px 12px;
+        border-radius: 16px;
+        color: white;
+        font-size: 15px;
+        font-weight: 900;
+        transition: 0.25s ease;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.22);
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    .add {
+        background: linear-gradient(135deg, var(--green1), var(--green2));
+    }
+
+    .update {
+        background: linear-gradient(135deg, var(--yellow1), var(--yellow2));
+    }
+
+    .delete {
+        background: linear-gradient(135deg, var(--red1), var(--red2));
+    }
+
+    .search-box {
+        padding: 0 18px 18px;
+    }
+
+    .search-wrap {
+        position: relative;
+    }
+
+    .search-wrap .icon {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #cbd5e1;
+        font-size: 16px;
+    }
+
+    .search-wrap input {
+        padding-right: 42px;
+        background: rgba(255,255,255,0.05);
+    }
+
+    .table-panel {
+        overflow: hidden;
+    }
+
+    .table-top {
+        padding: 18px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .table-top h2 {
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    .table-top .mini-note {
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+    }
+
+    thead {
+        background: linear-gradient(90deg, rgba(37,99,235,0.35), rgba(14,165,233,0.15));
+    }
+
+    th {
+        padding: 16px 14px;
+        text-align: center;
+        font-size: 14px;
+        color: #e0f2fe;
+        font-weight: 800;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    td {
+        padding: 16px 14px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        color: #e5edf7;
+        font-size: 15px;
+    }
+
+    tbody tr {
+        cursor: pointer;
+        transition: 0.22s ease;
+    }
+
+    tbody tr:hover {
+        background: rgba(59, 130, 246, 0.10);
+    }
+
+    tbody tr.selected-row {
+        background: rgba(34, 197, 94, 0.14) !important;
+        outline: 1px solid rgba(34, 197, 94, 0.28);
+    }
+
+    tbody tr:nth-child(even) {
+        background: rgba(255,255,255,0.018);
+    }
+
+    .empty-state {
+        padding: 35px 20px;
+        text-align: center;
+        color: #cbd5e1;
+        display: none;
+    }
+
+    .empty-state .emoji {
+        font-size: 44px;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .mobile-cards {
+        display: none;
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .user-card {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.22);
+        cursor: pointer;
+        transition: 0.25s ease;
+    }
+
+    .user-card:hover {
+        transform: translateY(-2px);
+        background: rgba(59, 130, 246, 0.10);
+    }
+
+    .user-card.selected-card {
+        outline: 1px solid rgba(34, 197, 94, 0.35);
+        background: rgba(34, 197, 94, 0.10);
+    }
+
+    .card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .user-name {
+        font-size: 18px;
+        font-weight: 900;
+        color: #fff;
+    }
+
+    .user-id {
+        font-size: 13px;
+        color: #bfdbfe;
+        background: rgba(37,99,235,0.18);
+        border: 1px solid rgba(59,130,246,0.2);
+        padding: 6px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .card-info {
+        display: grid;
+        gap: 10px;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: rgba(255,255,255,0.03);
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+
+    .info-label {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .info-value {
+        font-weight: 800;
+        color: #f8fafc;
+        text-align: left;
+        word-break: break-word;
+    }
+
+    .foot-note {
+        text-align: center;
+        margin-top: 14px;
+        color: #8ea2bc;
+        font-size: 13px;
+        line-height: 1.8;
+    }
+
+    @media (max-width: 1100px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        body {
+            padding: 12px 10px 24px;
+        }
+
+        .hero-inner {
+            padding: 18px;
+        }
+
+        .hero-text p {
+            font-size: 14px;
+        }
+
+        .hero-badge {
+            width: 100%;
+            text-align: center;
+        }
+
+        .stats {
+            grid-template-columns: 1fr;
+        }
+
+        .panel,
+        .hero,
+        .stat-card {
+            border-radius: 20px;
+        }
+
+        .panel-header,
+        .panel-body,
+        .table-top,
+        .search-box {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .actions {
+            grid-template-columns: 1fr;
+        }
+
+        button {
+            width: 100%;
+            min-height: 50px;
+            font-size: 15px;
+        }
+
+        .table-wrapper {
+            display: none;
+        }
+
+        .mobile-cards {
+            display: grid;
+        }
+
+        .table-top h2 {
+            font-size: 18px;
+        }
+
+        .table-top .mini-note {
+            font-size: 12px;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+    <div class="hero">
+        <div class="hero-inner">
+            <div class="hero-text">
+                <h1>📋 نظام كشف الأسماء</h1>
+                <p>
+                    لوحة مرتبة لإدارة الأسماء والحسابات والأرصدة بسهولة، مع تصميم حديث
+                    مناسب للكمبيوتر والجوال بشكل ممتاز.
+                </p>
+            </div>
+            <div class="hero-badge">إدارة المستخدمين • حفظ محلي تلقائي</div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-title">عدد المستخدمين</div>
+            <div class="stat-value" id="usersCount">0</div>
+            <div class="stat-note">إجمالي السجلات الموجودة في النظام</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-title">مجموع الأرصدة</div>
+            <div class="stat-value" id="totalBalance">0</div>
+            <div class="stat-note">مجموع جميع الأرصدة المخزنة</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-title">أعلى رصيد</div>
+            <div class="stat-value" id="maxBalance">0</div>
+            <div class="stat-note">أكبر قيمة رصيد بين المستخدمين</div>
+        </div>
+    </div>
+
+    <div class="layout">
+
+        <!-- النموذج -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">بيانات المستخدم</div>
+                <div class="panel-subtitle">
+                    أدخل البيانات ثم اختر الإجراء المطلوب. يمكنك الضغط على أي مستخدم من القائمة لتعبئة الحقول تلقائيًا.
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <div class="input-group">
+                    <label for="id">رقم المستخدم (ID)</label>
+                    <div class="input-wrap">
+                        <span>🆔</span>
+                        <input type="text" id="id" placeholder="مثال: 101">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="name">الاسم</label>
+                    <div class="input-wrap">
+                        <span>👤</span>
+                        <input type="text" id="name" placeholder="أدخل الاسم الكامل">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="username">الحساب</label>
+                    <div class="input-wrap">
+                        <span>📛</span>
+                        <input type="text" id="username" placeholder="أدخل اسم الحساب">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="balance">الرصيد</label>
+                    <div class="input-wrap">
+                        <span>💰</span>
+                        <input type="number" id="balance" placeholder="أدخل الرصيد">
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button class="add" onclick="addUser()">إضافة</button>
+                    <button class="update" onclick="updateUser()">تعديل</button>
+                    <button class="delete" onclick="deleteUser()">حذف</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- الجدول -->
+        <div class="panel table-panel">
+            <div class="table-top">
+                <div>
+                    <h2>سجل المستخدمين</h2>
+                    <div class="mini-note">اضغط على أي سجل لاختياره وتعبئة البيانات في النموذج</div>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <div class="search-wrap">
+                    <span class="icon">🔎</span>
+                    <input type="text" id="search" placeholder="ابحث بالاسم أو ID..." onkeyup="searchUser()">
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>الاسم</th>
+                            <th>الحساب</th>
+                            <th>الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- بطاقات الجوال -->
+            <div class="mobile-cards" id="mobileCards"></div>
+
+            <div class="empty-state" id="emptyState">
+                <span class="emoji">📭</span>
+                لا توجد بيانات حالياً — أضف أول مستخدم ليظهر هنا.
+            </div>
+        </div>
+    </div>
+
+    <div class="foot-note">
+        تم تحسين هذه النسخة لتكون مريحة جدًا على الجوال: في الشاشات الصغيرة يتم عرض المستخدمين كبطاقات بدل الجدول.
+    </div>
+</div>
+
+<script>
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let selectedUserId = null;
+
+function saveData() {
+    localStorage.setItem("users", JSON.stringify(users));
+}
+
+function updateStats(data = users) {
+    const count = data.length;
+    const balances = data.map(u => Number(u.balance) || 0);
+    const total = balances.reduce((sum, b) => sum + b, 0);
+    const max = balances.length ? Math.max(...balances) : 0;
+
+    document.getElementById("usersCount").textContent = count;
+    document.getElementById("totalBalance").textContent = total;
+    document.getElementById("maxBalance").textContent = max;
+}
+
+function displayUsers(data = users) {
+    let table = "";
+    let cards = "";
+
+    data.forEach(u => {
+        const isSelected = String(selectedUserId) === String(u.id);
+
+        table += `
+        <tr onclick="selectUser('${u.id}')" class="${isSelected ? 'selected-row' : ''}">
+            <td>${u.id}</td>
+            <td>${u.name}</td>
+            <td>${u.username || '-'}</td>
+            <td>${u.balance || 0}</td>
+        </tr>`;
+
+        cards += `
+        <div class="user-card ${isSelected ? 'selected-card' : ''}" onclick="selectUser('${u.id}')">
+            <div class="card-top">
+                <div class="user-name">${u.name}</div>
+                <div class="user-id">ID: ${u.id}</div>
+            </div>
+
+            <div class="card-info">
+                <div class="info-row">
+                    <div class="info-label">الحساب</div>
+                    <div class="info-value">${u.username || '-'}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">الرصيد</div>
+                    <div class="info-value">${u.balance || 0}</div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    document.getElementById("tableBody").innerHTML = table;
+    document.getElementById("mobileCards").innerHTML = cards;
+
+    const empty = data.length === 0;
+    document.getElementById("emptyState").style.display = empty ? "block" : "none";
+
+    updateStats(users);
+}
+
+function addUser() {
+    let user = {
+        id: document.getElementById("id").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        username: document.getElementById("username").value.trim(),
+        balance: document.getElementById("balance").value.trim()
+    };
+
+    if (!user.id || !user.name) {
+        alert("أدخل البيانات كاملة!");
+        return;
+    }
+
+    users.push(user);
+    saveData();
+    selectedUserId = user.id;
+    displayUsers();
+    clearInputs();
+}
+
+function selectUser(id) {
+    let u = users.find(x => x.id == id);
+    if (!u) return;
+
+    selectedUserId = id;
+
+    document.getElementById("id").value = u.id;
+    document.getElementById("name").value = u.name;
+    document.getElementById("username").value = u.username;
+    document.getElementById("balance").value = u.balance;
+
+    const searchValue = document.getElementById("search").value.trim();
+    if (searchValue) {
+        searchUser();
+    } else {
+        displayUsers();
+    }
+}
+
+function updateUser() {
+    let id = document.getElementById("id").value;
+    let u = users.find(x => x.id == id);
+
+    if (u) {
+        u.name = document.getElementById("name").value;
+        u.username = document.getElementById("username").value;
+        u.balance = document.getElementById("balance").value;
+        selectedUserId = id;
+        saveData();
+        displayUsers();
+    }
+}
+
+function deleteUser() {
+    let id = document.getElementById("id").value;
+    users = users.filter(u => u.id != id);
+    if (String(selectedUserId) === String(id)) {
+        selectedUserId = null;
+    }
+    saveData();
+    displayUsers();
+    clearInputs();
+}
+
+function searchUser() {
+    let value = document.getElementById("search").value.toLowerCase();
+    let filtered = users.filter(u =>
+        u.name.toLowerCase().includes(value) ||
+        u.id.toString().includes(value)
+    );
+    displayUsers(filtered);
+}
+
+function clearInputs() {
+    document.getElementById("id").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("username").value = "";
+    document.getElementById("balance").value = "";
+}
+
+displayUsers();
+</script>
+
+</body>
+</html>
